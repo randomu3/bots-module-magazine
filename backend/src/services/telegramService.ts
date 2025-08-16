@@ -171,4 +171,147 @@ export class TelegramService {
       };
     }
   }
+
+  /**
+   * Send message to a specific chat
+   */
+  static async sendMessage(
+    token: string,
+    chatId: string | number,
+    text: string,
+    options: {
+      parse_mode?: 'HTML' | 'Markdown' | 'MarkdownV2';
+      disable_web_page_preview?: boolean;
+      disable_notification?: boolean;
+      reply_markup?: any;
+    } = {}
+  ): Promise<boolean> {
+    try {
+      const response = await axios.post<TelegramApiResponse<any>>(
+        `${this.BASE_URL}${token}/sendMessage`,
+        {
+          chat_id: chatId,
+          text,
+          ...options,
+        },
+        {
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return response.data.ok;
+    } catch (error: any) {
+      console.error('Failed to send message:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get bot's chat members count (for channels/groups)
+   */
+  static async getChatMembersCount(token: string, chatId: string | number): Promise<number> {
+    try {
+      const response = await axios.get<TelegramApiResponse<number>>(
+        `${this.BASE_URL}${token}/getChatMembersCount`,
+        {
+          params: { chat_id: chatId },
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.data.ok && response.data.result) {
+        return response.data.result;
+      }
+
+      return 0;
+    } catch (error: any) {
+      console.error('Failed to get chat members count:', error.message);
+      return 0;
+    }
+  }
+
+  /**
+   * Get chat information
+   */
+  static async getChat(token: string, chatId: string | number): Promise<any> {
+    try {
+      const response = await axios.get<TelegramApiResponse<any>>(
+        `${this.BASE_URL}${token}/getChat`,
+        {
+          params: { chat_id: chatId },
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.data.ok && response.data.result) {
+        return response.data.result;
+      }
+
+      return null;
+    } catch (error: any) {
+      console.error('Failed to get chat info:', error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Send broadcast message to multiple chats
+   */
+  static async sendBroadcast(
+    token: string,
+    chatIds: (string | number)[],
+    text: string,
+    options: {
+      parse_mode?: 'HTML' | 'Markdown' | 'MarkdownV2';
+      disable_web_page_preview?: boolean;
+      disable_notification?: boolean;
+      delay_between_messages?: number; // milliseconds
+    } = {}
+  ): Promise<{
+    successful: number;
+    failed: number;
+    results: Array<{ chatId: string | number; success: boolean; error?: string }>;
+  }> {
+    const results: Array<{ chatId: string | number; success: boolean; error?: string }> = [];
+    let successful = 0;
+    let failed = 0;
+    const delay = options.delay_between_messages || 100; // Default 100ms delay
+
+    for (const chatId of chatIds) {
+      try {
+        const success = await this.sendMessage(token, chatId, text, {
+          parse_mode: options.parse_mode,
+          disable_web_page_preview: options.disable_web_page_preview,
+          disable_notification: options.disable_notification,
+        });
+
+        if (success) {
+          successful++;
+          results.push({ chatId, success: true });
+        } else {
+          failed++;
+          results.push({ chatId, success: false, error: 'Failed to send message' });
+        }
+      } catch (error: any) {
+        failed++;
+        results.push({ chatId, success: false, error: error.message });
+      }
+
+      // Add delay between messages to avoid rate limiting
+      if (delay > 0 && chatId !== chatIds[chatIds.length - 1]) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    return { successful, failed, results };
+  }
 }

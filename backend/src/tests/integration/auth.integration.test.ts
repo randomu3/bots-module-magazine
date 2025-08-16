@@ -26,7 +26,8 @@ describe('Authentication Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    // Database is mocked, no cleanup needed
+    // Clear test data between tests
+    jest.clearAllMocks();
   });
 
   afterAll(async () => {

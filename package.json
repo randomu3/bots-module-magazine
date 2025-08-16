@@ -31,7 +31,9 @@
     "npm": ">=9.0.0"
   },
   "dependencies": {
+    "@types/stripe": "^8.0.417",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "stripe": "^18.4.0"
   }
 }

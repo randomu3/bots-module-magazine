@@ -4,9 +4,9 @@ import { UserModel } from '../models/User';
 
 const JWT_SECRET = process.env['JWT_SECRET'] || 'your-secret-key';
 
-interface AuthRequest extends Request {
+export interface AuthenticatedRequest extends Request {
   user?: {
-    userId: string;
+    id: string;
     email: string;
     role: string;
   };
@@ -14,7 +14,7 @@ interface AuthRequest extends Request {
 
 // Middleware to verify JWT token
 export const authenticateToken = async (
-  req: AuthRequest,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -51,7 +51,7 @@ export const authenticateToken = async (
 
     // Add user info to request
     req.user = {
-      userId: decoded.userId,
+      id: decoded.userId,
       email: decoded.email,
       role: decoded.role
     };
@@ -94,7 +94,7 @@ export const authenticateToken = async (
 
 // Middleware to check if user has required role
 export const requireRole = (roles: string | string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({
         error: {
@@ -125,7 +125,7 @@ export const requireRole = (roles: string | string[]) => {
 
 // Middleware to check if user's email is verified
 export const requireEmailVerification = async (
-  req: AuthRequest,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -141,7 +141,7 @@ export const requireEmailVerification = async (
       return;
     }
 
-    const user = await UserModel.findById(req.user.userId);
+    const user = await UserModel.findById(req.user.id);
     if (!user) {
       res.status(401).json({
         error: {
@@ -179,7 +179,7 @@ export const requireEmailVerification = async (
 
 // Optional authentication - doesn't fail if no token provided
 export const optionalAuth = async (
-  req: AuthRequest,
+  req: AuthenticatedRequest,
   _res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -200,7 +200,7 @@ export const optionalAuth = async (
     const user = await UserModel.findById(decoded.userId);
     if (user) {
       req.user = {
-        userId: decoded.userId,
+        id: decoded.userId,
         email: decoded.email,
         role: decoded.role
       };

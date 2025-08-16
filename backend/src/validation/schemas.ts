@@ -118,6 +118,30 @@ export const updateSupportTicketSchema = Joi.object({
   priority: Joi.string().valid('low', 'normal', 'high', 'critical').optional(),
 });
 
+// User feedback validation schemas
+export const createUserFeedbackSchema = Joi.object({
+  user_id: uuidSchema.required(),
+  type: Joi.string().valid('general', 'bug_report', 'feature_request', 'complaint', 'compliment').default('general'),
+  subject: Joi.string().min(1).max(255).required(),
+  message: Joi.string().min(1).max(5000).required(),
+  rating: Joi.number().integer().min(1).max(5).optional(),
+});
+
+export const updateUserFeedbackSchema = Joi.object({
+  status: Joi.string().valid('pending', 'reviewed', 'responded', 'closed').optional(),
+  admin_response: Joi.string().max(5000).optional(),
+  admin_user_id: uuidSchema.optional(),
+  responded_at: Joi.date().optional(),
+});
+
+// Support quality rating validation schemas
+export const createSupportQualityRatingSchema = Joi.object({
+  ticket_id: uuidSchema.required(),
+  user_id: uuidSchema.required(),
+  rating: Joi.number().integer().min(1).max(5).required(),
+  feedback_text: Joi.string().max(2000).optional(),
+});
+
 // Email verification and password reset schemas
 export const emailVerificationSchema = Joi.object({
   token: Joi.string().required(),

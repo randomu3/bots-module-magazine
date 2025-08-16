@@ -7,6 +7,8 @@ export { BotModuleActivationModel } from './BotModuleActivation';
 export { SupportTicketModel } from './SupportTicket';
 export { EmailVerificationTokenModel } from './EmailVerificationToken';
 export { PasswordResetTokenModel } from './PasswordResetToken';
+export { NotificationModel } from './Notification';
+export { BotSubscriberModel } from './BotSubscriber';
 
 // Export types
 export * from '../types/database';

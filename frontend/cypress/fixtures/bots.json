@@ -1,0 +1,16 @@
+{
+  "validBot": {
+    "token": "1234567890:AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPPQQRRss",
+    "name": "Test Bot",
+    "username": "testbot",
+    "description": "A test bot for demonstration"
+  },
+  "invalidBot": {
+    "token": "invalid-token-format",
+    "name": "Invalid Bot"
+  },
+  "expiredBot": {
+    "token": "9876543210:ExpiredTokenThatNoLongerWorks",
+    "name": "Expired Bot"
+  }
+}

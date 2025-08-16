@@ -338,9 +338,15 @@ jest.mock('../middleware/authMiddleware', () => ({
       });
     }
     
+    // Extract userId from token for integration tests
+    let userId = '123e4567-e89b-12d3-a456-426614174000';
+    if (token.startsWith('access-token-')) {
+      userId = token.replace('access-token-', '');
+    }
+    
     // Set user for valid tokens
     req.user = {
-      userId: '123e4567-e89b-12d3-a456-426614174000',
+      userId: userId,
       email: 'test@example.com',
       role: 'user'
     };
@@ -403,9 +409,24 @@ jest.mock('../middleware/authMiddleware', () => ({
 
 // Mock email service
 jest.mock('../services/emailService', () => ({
-  sendVerificationEmail: jest.fn(() => Promise.resolve()),
-  sendWelcomeEmail: jest.fn(() => Promise.resolve()),
-  sendPasswordResetEmail: jest.fn(() => Promise.resolve()),
+  sendVerificationEmail: jest.fn((email: string) => {
+    if (email.includes('fail')) {
+      return Promise.reject(new Error('Email service error'));
+    }
+    return Promise.resolve();
+  }),
+  sendWelcomeEmail: jest.fn((email: string) => {
+    if (email.includes('fail')) {
+      return Promise.reject(new Error('Email service error'));
+    }
+    return Promise.resolve();
+  }),
+  sendPasswordResetEmail: jest.fn((email: string) => {
+    if (email.includes('fail')) {
+      return Promise.reject(new Error('Email service error'));
+    }
+    return Promise.resolve();
+  }),
 }));
 
 // Mock multer

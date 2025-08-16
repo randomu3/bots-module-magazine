@@ -1,0 +1,277 @@
+# Prometheus alert rules for Telegram Bot Platform
+
+groups:
+  - name: telegram-bot-platform-infrastructure
+    rules:
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.company.com/runbooks/high-cpu"
+
+      # Critical CPU usage
+      - alert: CriticalCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "Critical CPU usage detected"
+          description: "CPU usage is above 95% for more than 2 minutes on {{ $labels.instance }}"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}"
+
+      # Critical memory usage
+      - alert: CriticalMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "Critical memory usage detected"
+          description: "Memory usage is above 95% for more than 2 minutes on {{ $labels.instance }}"
+
+      # Low disk space
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 20
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is below 20% on {{ $labels.instance }}"
+
+      # Critical disk space
+      - alert: CriticalDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 1m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "Critical disk space"
+          description: "Disk space is below 10% on {{ $labels.instance }}"
+
+      # Service down
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Service is down"
+          description: "{{ $labels.job }} service is down on {{ $labels.instance }}"
+
+  - name: telegram-bot-platform-application
+    rules:
+      # High response time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(telegram_bot_platform_http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High response time"
+          description: "95th percentile response time is above 1 second for {{ $labels.job }}"
+
+      # Critical response time
+      - alert: CriticalResponseTime
+        expr: histogram_quantile(0.95, rate(telegram_bot_platform_http_request_duration_seconds_bucket[5m])) > 5
+        for: 2m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Critical response time"
+          description: "95th percentile response time is above 5 seconds for {{ $labels.job }}"
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(telegram_bot_platform_http_requests_total{status_code=~"5.."}[5m]) / rate(telegram_bot_platform_http_requests_total[5m]) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High error rate"
+          description: "Error rate is above 5% for {{ $labels.job }}"
+
+      # Critical error rate
+      - alert: CriticalErrorRate
+        expr: rate(telegram_bot_platform_http_requests_total{status_code=~"5.."}[5m]) / rate(telegram_bot_platform_http_requests_total[5m]) * 100 > 20
+        for: 2m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Critical error rate"
+          description: "Error rate is above 20% for {{ $labels.job }}"
+
+      # Application errors spike
+      - alert: ApplicationErrorsSpike
+        expr: increase(telegram_bot_platform_application_errors_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Application errors spike"
+          description: "More than 10 application errors in the last 5 minutes"
+
+      # Too many active connections
+      - alert: TooManyActiveConnections
+        expr: telegram_bot_platform_active_connections > 1000
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Too many active connections"
+          description: "Active connections count is above 1000"
+
+  - name: telegram-bot-platform-database
+    rules:
+      # Database connection issues
+      - alert: DatabaseConnectionIssues
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: database
+        annotations:
+          summary: "Database connection issues"
+          description: "Cannot connect to PostgreSQL database"
+
+      # Slow database queries
+      - alert: SlowDatabaseQueries
+        expr: histogram_quantile(0.95, rate(telegram_bot_platform_db_query_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "Slow database queries"
+          description: "95th percentile database query time is above 1 second"
+
+      # Database connection pool exhaustion
+      - alert: DatabaseConnectionPoolExhaustion
+        expr: telegram_bot_platform_db_connection_pool{status="waiting"} > 10
+        for: 2m
+        labels:
+          severity: critical
+          team: database
+        annotations:
+          summary: "Database connection pool exhaustion"
+          description: "More than 10 connections waiting in the pool"
+
+  - name: telegram-bot-platform-redis
+    rules:
+      # Redis connection issues
+      - alert: RedisConnectionIssues
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: cache
+        annotations:
+          summary: "Redis connection issues"
+          description: "Cannot connect to Redis server"
+
+      # Slow Redis operations
+      - alert: SlowRedisOperations
+        expr: histogram_quantile(0.95, rate(telegram_bot_platform_redis_operation_duration_seconds_bucket[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          team: cache
+        annotations:
+          summary: "Slow Redis operations"
+          description: "95th percentile Redis operation time is above 100ms"
+
+  - name: telegram-bot-platform-business
+    rules:
+      # Payment failures spike
+      - alert: PaymentFailuresSpike
+        expr: increase(telegram_bot_platform_payment_transactions_total{status="failed"}[10m]) > 5
+        for: 1m
+        labels:
+          severity: warning
+          team: business
+        annotations:
+          summary: "Payment failures spike"
+          description: "More than 5 payment failures in the last 10 minutes"
+
+      # Telegram API errors
+      - alert: TelegramAPIErrors
+        expr: increase(telegram_bot_platform_telegram_api_errors_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          team: integrations
+        annotations:
+          summary: "Telegram API errors"
+          description: "More than 10 Telegram API errors in the last 5 minutes"
+
+      # Low user registration rate
+      - alert: LowUserRegistrationRate
+        expr: increase(telegram_bot_platform_user_registrations_total[1h]) < 1
+        for: 2h
+        labels:
+          severity: info
+          team: growth
+        annotations:
+          summary: "Low user registration rate"
+          description: "Less than 1 user registration in the last hour for 2 hours"
+
+  - name: telegram-bot-platform-containers
+    rules:
+      # Container restart
+      - alert: ContainerRestart
+        expr: increase(container_start_time_seconds[10m]) > 0
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Container restarted"
+          description: "Container {{ $labels.name }} has restarted"
+
+      # Container high memory usage
+      - alert: ContainerHighMemoryUsage
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Container high memory usage"
+          description: "Container {{ $labels.name }} memory usage is above 90%"
+
+      # Container OOM killed
+      - alert: ContainerOOMKilled
+        expr: increase(container_memory_failures_total{type="oom"}[5m]) > 0
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "Container OOM killed"
+          description: "Container {{ $labels.name }} was killed due to out of memory"

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { ModuleController } from '../controllers/moduleController';
+import { authenticateToken } from '../middleware/authMiddleware';
 
 const router = Router();
 
@@ -12,9 +13,20 @@ router.get('/search', ModuleController.searchModules);
 router.get('/:id', ModuleController.getModuleById);
 router.get('/:id/ratings', ModuleController.getModuleRatings);
 
-// Protected routes will be added in subsequent tasks
-// router.use(authenticateToken); // Apply to routes below
-// router.post('/:id/activate', ModuleController.activateModule);
-// router.post('/upload', ModuleController.uploadModule);
+// Protected routes (authentication required)
+router.use(authenticateToken);
+
+// Module activation routes
+router.post('/:id/activate', ModuleController.activateModule);
+router.put('/activations/:id/settings', ModuleController.updateModuleSettings);
+router.delete('/activations/:id/deactivate', ModuleController.deactivateModule);
+router.post('/activations/:id/regenerate-key', ModuleController.regenerateApiKey);
+router.get('/activations', ModuleController.getUserActivations);
+
+// Module upload and management routes (for developers)
+router.post('/upload', ModuleController.uploadModule);
+router.get('/my-modules', ModuleController.getDeveloperModules);
+router.put('/:id', ModuleController.updateModule);
+router.delete('/:id', ModuleController.deleteModule);
 
 export default router;

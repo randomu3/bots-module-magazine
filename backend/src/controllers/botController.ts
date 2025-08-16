@@ -401,8 +401,10 @@ export class BotController {
       // Deactivate all modules for this bot
       try {
         const activations = await BotModuleActivationModel.findByBotId(id);
-        for (const activation of activations) {
-          await BotModuleActivationModel.deactivate(activation.id);
+        if (activations && Array.isArray(activations)) {
+          for (const activation of activations) {
+            await BotModuleActivationModel.deactivate(activation.id);
+          }
         }
       } catch (error) {
         console.warn('Failed to deactivate modules during bot deletion:', error);

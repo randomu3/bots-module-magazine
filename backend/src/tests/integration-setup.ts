@@ -66,17 +66,18 @@ jest.mock('../config/database', () => ({
 // Set test environment variables
 process.env['NODE_ENV'] = 'test';
 process.env['JWT_SECRET'] = 'test-secret-key';
+process.env['JWT_REFRESH_SECRET'] = 'test-refresh-secret-key';
 process.env['BOT_TOKEN_SECRET'] = 'test-secret-key';
 
 // Override JWT mock for integration tests
 jest.doMock('jsonwebtoken', () => ({
   sign: jest.fn((payload, secret, _options) => {
-    // Create unique tokens based on payload and secret
-    const tokenBase = `${payload.userId || 'default'}-${Date.now()}-${Math.random()}`;
+    // Create predictable tokens for testing
+    const userId = payload.userId || payload.id || 'default-user-id';
     if (secret === process.env['JWT_REFRESH_SECRET'] || secret === 'your-refresh-secret-key') {
-      return `refresh-${tokenBase}`;
+      return `refresh-token-${userId}`;
     }
-    return `access-${tokenBase}`;
+    return `access-token-${userId}`;
   }),
   verify: jest.fn((token, _secret) => {
     if (token === 'invalid-token' || token === 'invalid-refresh-token' || token === 'invalid-token-123') {
@@ -91,9 +92,8 @@ jest.doMock('jsonwebtoken', () => ({
     }
     
     // Extract user info from token
-    if (token.startsWith('access-') || token.startsWith('refresh-')) {
-      const parts = token.split('-');
-      const userId = parts[1] || 'default-user-id';
+    if (token.startsWith('access-token-') || token.startsWith('refresh-token-')) {
+      const userId = token.replace('access-token-', '').replace('refresh-token-', '');
       
       // Find user in test data
       const user = Object.values(testData).find((u: any) => u.id === userId);
@@ -104,9 +104,12 @@ jest.doMock('jsonwebtoken', () => ({
           role: user.role || 'user' 
         };
       }
+      
+      // Return default user data for valid token format
+      return { userId: userId, email: 'test@example.com', role: 'user' };
     }
     
-    // Default fallback
+    // Default fallback for any other valid-looking token
     return { userId: 'default-user-id', email: 'test@example.com', role: 'user' };
   }),
 }));
@@ -185,16 +188,32 @@ beforeEach(() => {
     
     // User update
     if (query.includes('UPDATE users')) {
-      const userId = values?.[0];
-      let user = testData[`user_${userId}`] || Object.values(testData).find((u: any) => u.id === userId);
+      let userId: string | undefined, user: any;
+      
+      // Handle different UPDATE query patterns
+      if (query.includes('WHERE id = $1')) {
+        userId = values?.[values.length - 1]; // ID is usually the last parameter
+      } else if (query.includes('WHERE id')) {
+        userId = values?.[0];
+      }
+      
+      user = testData[`user_${userId}`] || Object.values(testData).find((u: any) => u.id === userId);
+      
       if (user) {
-        // Update fields based on query
-        if (query.includes('first_name')) user.first_name = values?.[1] || 'Jane';
-        if (query.includes('theme_preference')) user.theme_preference = values?.[2] || 'dark';
-        if (query.includes('balance')) user.balance = values?.[1] || 150;
+        // Update fields based on query and values
+        if (query.includes('first_name') && values?.[0]) user.first_name = values[0];
+        if (query.includes('theme_preference') && values?.[1]) user.theme_preference = values[1];
+        if (query.includes('balance') && values?.[0] !== undefined) user.balance = values[0];
         if (query.includes('email_verified')) user.email_verified = true;
-        if (query.includes('password_hash')) user.password_hash = values?.[1] || '$2a$12$newhashedpassword';
+        if (query.includes('password_hash') && values?.[0]) user.password_hash = values[0];
         user.updated_at = new Date();
+        
+        // Update in storage
+        testData[`user_${userId}`] = user;
+        if (user.email) {
+          testData[`email_${user.email}`] = user;
+        }
+        
         return Promise.resolve({ rows: [user] });
       }
       return Promise.resolve({ rows: [] });
@@ -236,11 +255,20 @@ beforeEach(() => {
     
     // Bot status update
     if (query.includes('UPDATE bots') && query.includes('status')) {
-      const botId = values?.[0];
+      let botId: string | undefined;
+      
+      // Handle different UPDATE query patterns
+      if (query.includes('WHERE id = $2')) {
+        botId = values?.[1];
+      } else if (query.includes('WHERE id')) {
+        botId = values?.[values.length - 1];
+      }
+      
       let bot = testData[`bot_${botId}`] || Object.values(testData).find((b: any) => b.id === botId);
       if (bot) {
-        bot.status = values?.[1] || 'inactive';
+        bot.status = values?.[0] || 'inactive';
         bot.updated_at = new Date();
+        testData[`bot_${botId}`] = bot;
         return Promise.resolve({ rows: [bot] });
       }
       return Promise.resolve({ rows: [] });
@@ -274,11 +302,20 @@ beforeEach(() => {
     
     // Module status update
     if (query.includes('UPDATE modules') && query.includes('status')) {
-      const moduleId = values?.[0];
+      let moduleId: string | undefined;
+      
+      // Handle different UPDATE query patterns
+      if (query.includes('WHERE id = $2')) {
+        moduleId = values?.[1];
+      } else if (query.includes('WHERE id')) {
+        moduleId = values?.[values.length - 1];
+      }
+      
       let module = testData[`module_${moduleId}`] || Object.values(testData).find((m: any) => m.id === moduleId);
       if (module) {
-        module.status = values?.[1] || 'approved';
+        module.status = values?.[0] || 'approved';
         module.updated_at = new Date();
+        testData[`module_${moduleId}`] = module;
         return Promise.resolve({ rows: [module] });
       }
       return Promise.resolve({ rows: [] });
@@ -312,12 +349,21 @@ beforeEach(() => {
     
     // Transaction status update
     if (query.includes('UPDATE transactions') && query.includes('status')) {
-      const transactionId = values?.[0];
+      let transactionId: string | undefined;
+      
+      // Handle different UPDATE query patterns
+      if (query.includes('WHERE id = $2')) {
+        transactionId = values?.[1];
+      } else if (query.includes('WHERE id')) {
+        transactionId = values?.[values.length - 1];
+      }
+      
       let transaction = testData[`transaction_${transactionId}`] || Object.values(testData).find((t: any) => t.id === transactionId);
       if (transaction) {
-        transaction.status = values?.[1] || 'completed';
+        transaction.status = values?.[0] || 'completed';
         transaction.processed_at = new Date();
         transaction.updated_at = new Date();
+        testData[`transaction_${transactionId}`] = transaction;
         return Promise.resolve({ rows: [transaction] });
       }
       return Promise.resolve({ rows: [] });

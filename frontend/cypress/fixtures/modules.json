@@ -1,0 +1,26 @@
+{
+  "freeModule": {
+    "id": "free-module-1",
+    "name": "Basic Analytics",
+    "description": "Basic analytics module for tracking user interactions",
+    "category": "Analytics",
+    "price": 0,
+    "features": ["User tracking", "Basic reports", "Export data"]
+  },
+  "paidModule": {
+    "id": "paid-module-1",
+    "name": "Advanced Payment Gateway",
+    "description": "Advanced payment processing with multiple providers",
+    "category": "Payment",
+    "price": 29.99,
+    "features": ["Multiple payment methods", "Fraud detection", "Recurring payments"]
+  },
+  "premiumModule": {
+    "id": "premium-module-1",
+    "name": "AI Chatbot Assistant",
+    "description": "AI-powered chatbot for customer support",
+    "category": "AI",
+    "price": 99.99,
+    "features": ["Natural language processing", "Multi-language support", "Learning capabilities"]
+  }
+}

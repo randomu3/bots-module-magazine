@@ -5,6 +5,22 @@ export type ModuleStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 export type TransactionType = 'payment' | 'withdrawal' | 'commission' | 'refund';
 export type TransactionStatus = 'pending' | 'completed' | 'failed' | 'cancelled';
 export type ThemePreference = 'light' | 'dark' | 'system';
+export type NotificationType = 
+  | 'email_verification'
+  | 'password_reset'
+  | 'welcome'
+  | 'payment_received'
+  | 'payment_failed'
+  | 'withdrawal_requested'
+  | 'withdrawal_completed'
+  | 'withdrawal_failed'
+  | 'module_activated'
+  | 'module_expired'
+  | 'referral_commission'
+  | 'system_announcement'
+  | 'support_ticket_created'
+  | 'support_ticket_replied';
+export type NotificationStatus = 'pending' | 'sent' | 'failed' | 'read';
 
 // Base interface for all models
 export interface BaseModel {
@@ -26,6 +42,31 @@ export interface User extends BaseModel {
   email_verified: boolean;
   theme_preference: ThemePreference;
   avatar_url?: string;
+  notification_preferences?: NotificationPreferences;
+}
+
+// Notification preferences interface
+export interface NotificationPreferences {
+  email_notifications: boolean;
+  payment_notifications: boolean;
+  withdrawal_notifications: boolean;
+  module_notifications: boolean;
+  referral_notifications: boolean;
+  system_notifications: boolean;
+  support_notifications: boolean;
+}
+
+// Notification model interface
+export interface Notification extends BaseModel {
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  status: NotificationStatus;
+  email_sent: boolean;
+  email_sent_at?: Date;
+  read_at?: Date;
+  metadata: Record<string, any>;
 }
 
 // Bot model interface
@@ -85,6 +126,27 @@ export interface SupportTicket extends BaseModel {
   message: string;
   status: string;
   priority: string;
+}
+
+// User feedback interface
+export interface UserFeedback extends BaseModel {
+  user_id: string;
+  type: string;
+  subject: string;
+  message: string;
+  rating?: number;
+  status: string;
+  admin_response?: string;
+  admin_user_id?: string;
+  responded_at?: Date;
+}
+
+// Support quality rating interface
+export interface SupportQualityRating extends BaseModel {
+  ticket_id: string;
+  user_id: string;
+  rating: number;
+  feedback_text?: string;
 }
 
 // Module rating interface

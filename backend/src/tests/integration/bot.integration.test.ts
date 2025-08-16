@@ -1,9 +1,11 @@
 import request from 'supertest';
 import app from '../../index';
 import { BotModel } from '../../models/Bot';
-// UserModel is mocked in setup
+// UserModel imported for type checking
+import { EmailVerificationTokenModel } from '../../models/EmailVerificationToken';
 import { TelegramService } from '../../services/telegramService';
-import pool from '../../config/database';
+// Import integration setup for mocked database
+import '../integration-setup';
 
 // Mock TelegramService to avoid real API calls
 jest.mock('../../services/telegramService');
@@ -31,14 +33,12 @@ describe('Bot Integration Tests', () => {
     userId = registerResponse.body.user.id;
 
     // Verify email
-    const verificationToken = await pool.query(
-      'SELECT token FROM email_verification_tokens WHERE user_id = $1',
-      [userId]
-    );
+    const verificationTokens = await EmailVerificationTokenModel.findByUserId(userId);
+    expect(verificationTokens).toHaveLength(1);
 
     await request(app)
       .post('/api/auth/verify-email')
-      .send({ token: verificationToken.rows[0].token });
+      .send({ token: verificationTokens[0]?.token });
 
     // Login to get token
     const loginResponse = await request(app)
