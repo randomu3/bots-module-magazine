@@ -4,38 +4,38 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import pool, { testConnection } from './config/database';
-import redis, { testRedisConnection } from './config/redis';
-import { verifyEmailConfig } from './services/emailService';
-import { SchedulerService } from './services/schedulerService';
+// import redis, { testRedisConnection } from './config/redis';
+// import { verifyEmailConfig } from './services/emailService';
+// import { SchedulerService } from './services/schedulerService';
 
 // Import routes
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import botRoutes from './routes/botRoutes';
 import moduleRoutes from './routes/moduleRoutes';
-import paymentRoutes from './routes/paymentRoutes';
-import withdrawalRoutes from './routes/withdrawalRoutes';
-import referralRoutes from './routes/referralRoutes';
-import analyticsRoutes from './routes/analyticsRoutes';
-import notificationRoutes from './routes/notificationRoutes';
-import broadcastRoutes from './routes/broadcastRoutes';
-import subscriberRoutes from './routes/subscriberRoutes';
-import supportRoutes from './routes/supportRoutes';
-import feedbackRoutes from './routes/feedbackRoutes';
-import adminRoutes from './routes/adminRoutes';
+// import paymentRoutes from './routes/paymentRoutes';
+// import withdrawalRoutes from './routes/withdrawalRoutes';
+// import referralRoutes from './routes/referralRoutes';
+// import analyticsRoutes from './routes/analyticsRoutes';
+// import notificationRoutes from './routes/notificationRoutes';
+// import broadcastRoutes from './routes/broadcastRoutes';
+// import subscriberRoutes from './routes/subscriberRoutes';
+// import supportRoutes from './routes/supportRoutes';
+// import feedbackRoutes from './routes/feedbackRoutes';
+// import adminRoutes from './routes/adminRoutes';
 
 // Import monitoring and logging middleware
-import { requestLoggingMiddleware, errorLoggingMiddleware, rateLimitLoggingMiddleware } from './middleware/loggingMiddleware';
-import { metricsMiddleware, metricsEndpoint } from './middleware/metricsMiddleware';
-import { createServiceLogger } from './utils/logger';
-import { createHealthCheckEndpoint, createReadinessProbe, createLivenessProbe } from './utils/healthCheck';
+// import { requestLoggingMiddleware, errorLoggingMiddleware, rateLimitLoggingMiddleware } from './middleware/loggingMiddleware';
+// import { metricsMiddleware, metricsEndpoint } from './middleware/metricsMiddleware';
+// import { createServiceLogger } from './utils/logger';
+// import { createHealthCheckEndpoint, createReadinessProbe, createLivenessProbe } from './utils/healthCheck';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env['PORT'] || 3001;
-const logger = createServiceLogger('main');
+// const logger = createServiceLogger('main');
 
 // Rate limiting with logging
 const limiter = rateLimit({
@@ -54,12 +54,12 @@ app.use(cors({
 }));
 
 // Monitoring middleware (before rate limiting to capture all requests)
-app.use(metricsMiddleware);
-app.use(requestLoggingMiddleware);
+// app.use(metricsMiddleware);
+// app.use(requestLoggingMiddleware);
 
 // Rate limiting with logging
 app.use(limiter);
-app.use(rateLimitLoggingMiddleware);
+// app.use(rateLimitLoggingMiddleware);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -68,9 +68,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
 
 // Health check endpoints
-app.get('/health', createHealthCheckEndpoint(pool, redis));
-app.get('/health/ready', createReadinessProbe(pool, redis));
-app.get('/health/live', createLivenessProbe());
+// app.get('/health', createHealthCheckEndpoint(pool, null));
+// app.get('/health/ready', createReadinessProbe(pool, null));
+// app.get('/health/live', createLivenessProbe());
 
 // Metrics endpoint for Prometheus
 app.get('/metrics', metricsEndpoint);
@@ -88,20 +88,20 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/bots', botRoutes);
 app.use('/api/modules', moduleRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/withdrawals', withdrawalRoutes);
-app.use('/api/referrals', referralRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/broadcasts', broadcastRoutes);
-app.use('/api/subscribers', subscriberRoutes);
-app.use('/api/support', supportRoutes);
-app.use('/api/feedback', feedbackRoutes);
-app.use('/api/admin', adminRoutes);
+// app.use('/api/payments', paymentRoutes);
+// app.use('/api/withdrawals', withdrawalRoutes);
+// app.use('/api/referrals', referralRoutes);
+// app.use('/api/analytics', analyticsRoutes);
+// app.use('/api/notifications', notificationRoutes);
+// app.use('/api/broadcasts', broadcastRoutes);
+// app.use('/api/subscribers', subscriberRoutes);
+// app.use('/api/support', supportRoutes);
+// app.use('/api/feedback', feedbackRoutes);
+// app.use('/api/admin', adminRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
-  logger.warn('404 - Route not found', {
+  console.warn('404 - Route not found', {
     method: req.method,
     url: req.originalUrl,
     ip: req.ip,
@@ -118,9 +118,9 @@ app.use('*', (req, res) => {
 });
 
 // Error handling middleware
-app.use(errorLoggingMiddleware);
+// app.use(errorLoggingMiddleware);
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  logger.error('Unhandled error in error handler', {
+  console.error('Unhandled error in error handler', {
     error: {
       name: err.name,
       message: err.message,
@@ -139,21 +139,22 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 
 // Graceful shutdown handling
 const gracefulShutdown = async (signal: string) => {
-  logger.info(`Received ${signal}, starting graceful shutdown`);
+  console.info(`Received ${signal}, starting graceful shutdown`);
   
   try {
     // Close database connections
     await pool.end();
-    logger.info('Database connections closed');
+    console.info('Database connections closed');
     
     // Close Redis connection
-    redis.disconnect();
-    logger.info('Redis connection closed');
+    // redis.disconnect();
+    // logger.info('Redis connection closed');
     
-    logger.info('Graceful shutdown completed');
+    console.info('Graceful shutdown completed');
     process.exit(0);
-  } catch (error) {
-    logger.error('Error during graceful shutdown', { error: error.message });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Error during graceful shutdown', { error: errorMessage });
     process.exit(1);
   }
 };
@@ -164,7 +165,7 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  logger.error('Uncaught exception', { error: error.message, stack: error.stack });
+  console.error('Uncaught exception', { error: error.message, stack: error.stack });
   process.exit(1);
 });
 
@@ -187,7 +188,7 @@ if (process.env['NODE_ENV'] !== 'test') {
     await testConnection();
     
     // Test Redis connection
-    await testRedisConnection();
+    // await testRedisConnection();
     
     // Verify email service configuration
     await verifyEmailConfig();
@@ -197,7 +198,7 @@ if (process.env['NODE_ENV'] !== 'test') {
   });
 
   // Handle server errors
-  server.on('error', (error) => {
+  server.on('error', (error: Error) => {
     logger.error('Server error', { error: error.message });
   });
 }

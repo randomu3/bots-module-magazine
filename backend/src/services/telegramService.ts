@@ -289,9 +289,9 @@ export class TelegramService {
     for (const chatId of chatIds) {
       try {
         const success = await this.sendMessage(token, chatId, text, {
-          parse_mode: options.parse_mode,
-          disable_web_page_preview: options.disable_web_page_preview,
-          disable_notification: options.disable_notification,
+          ...(options.parse_mode && { parse_mode: options.parse_mode }),
+          ...(options.disable_web_page_preview !== undefined && { disable_web_page_preview: options.disable_web_page_preview }),
+          ...(options.disable_notification !== undefined && { disable_notification: options.disable_notification }),
         });
 
         if (success) {

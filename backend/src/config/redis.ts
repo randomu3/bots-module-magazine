@@ -1,15 +1,10 @@
-import Redis from 'ioredis';
+import { createClient } from 'redis';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const redis = new Redis({
-  host: process.env['REDIS_HOST'] || 'localhost',
-  port: parseInt(process.env['REDIS_PORT'] || '6379'),
-  password: process.env['REDIS_PASSWORD'] || undefined,
-  retryDelayOnFailover: 100,
-  maxRetriesPerRequest: 3,
-  lazyConnect: true,
+const redis = createClient({
+  url: process.env['REDIS_URL'] || 'redis://localhost:6379'
 });
 
 // Redis connection event handlers
@@ -17,7 +12,7 @@ redis.on('connect', () => {
   console.log('✅ Redis connection established');
 });
 
-redis.on('error', (err) => {
+redis.on('error', (err: Error) => {
   console.error('❌ Redis connection error:', err.message);
 });
 

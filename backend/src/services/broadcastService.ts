@@ -1,8 +1,6 @@
 import { NotificationModel, BroadcastNotification } from '../models/Notification';
 import { BotModel } from '../models/Bot';
-import { UserModel } from '../models/User';
 import { TelegramService } from './telegramService';
-import crypto from 'crypto';
 
 export interface BroadcastTarget {
   botId: string;
@@ -59,7 +57,7 @@ export class BroadcastService {
           chat_count: t.chatIds.length
         }))
       },
-      scheduled_at: scheduledAt,
+      ...(scheduledAt && { scheduled_at: scheduledAt }),
       metadata: {
         message_options: messageOptions || {},
         targets: targets
@@ -90,8 +88,8 @@ export class BroadcastService {
     // Update status to sending
     await NotificationModel.updateBroadcastStatus(broadcastId, 'sending');
 
-    const targets = broadcast.metadata.targets as BroadcastTarget[];
-    const messageOptions = broadcast.metadata.message_options || {};
+    const targets = broadcast.metadata['targets'] as BroadcastTarget[];
+    const messageOptions = broadcast.metadata['message_options'] || {};
     
     let totalSuccessful = 0;
     let totalFailed = 0;
@@ -331,7 +329,7 @@ export class BroadcastService {
     }
 
     // Generate bot breakdown
-    const targets = broadcast.metadata.targets as BroadcastTarget[];
+    const targets = broadcast.metadata['targets'] as BroadcastTarget[];
     const botBreakdown = [];
 
     for (const target of targets) {

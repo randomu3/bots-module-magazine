@@ -1262,8 +1262,9 @@ export class EmailService {
     
     return sendSupportTicketStatusUpdate(ticket, status, userEmail, firstName);
   }
-}// 
-Send feedback confirmation email
+}
+
+// Send feedback confirmation email
 export const sendFeedbackConfirmation = async (
   feedback: { id: string; subject: string; type: string; user_id: string },
   userEmail: string,
